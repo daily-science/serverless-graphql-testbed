@@ -1,0 +1,90 @@
+service: lambda-lxml-testbed
+
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+
+package:
+  individually: false
+  patterns:
+    - '!__pycache__/**'
+    - '!.git/**'
+    - '!.github/**'
+    - '!.pytest_cache/**'
+    - '!.mypy_cache/**'
+    - '!.tox/**'
+    - '!dist/**'
+    - '!docs/**'
+    - '!node_modules/**'
+    - '!package.json'
+    - '!package-log.json'
+    - '!tests/**'
+    - '!**'
+    - testbed/**
+
+custom:
+  #serverless-wsgi settings
+  wsgi:
+    app: testbed.testbed.app
+    packRequirements: false
+    pythonBin: python3
+
+  #serverless-python-requirements settings
+  pythonRequirements:
+    dockerizePip: True
+    useDownloadCache: false
+    useStaticCache: false
+
+
+# DRY constants: define all compound/generated names in one place
+# Override args are: .. defaults:
+# --app_acroym          signed-uploader
+# --s3_bucket           self:custom.app_acronym
+# --s3_key_base         self:custom.stage
+# --region              us-east-1
+# --stage               test
+# --deletion_policy     delete
+
+  app_acronym: ${opt:acronym, self:service}
+  default_stage: local
+  stage: ${opt:stage, self:custom.default_stage}
+  stack_name: ${self:custom.app_acronym}-${self:custom.stage}
+  region: ${opt:region, self:provider.region}
+  deletion_policy: Delete
+
+provider:
+  name: aws
+  runtime: python3.10
+  stage: ${opt:stage, 'dev'}
+  region: ap-southeast-2
+  environment:
+    REGION: ${self:custom.region}
+    DEPLOYMENT_STAGE: ${self:custom.stage}
+
+  apiGateway:
+    apiKeys:
+      - name: TempApiKey-${self:custom.stack_name}
+        description: Api key until we have an auth function # Optional
+
+functions:
+  app:
+    description: The graphql API of ${self:service}
+    handler: wsgi_handler.handler
+    memorySize: 2048 # optional, in MB, default is 1024
+    timeout: 10 # optional, in seconds, default is 6
+    events:
+      - http:
+          path: graphql
+          method: OPTIONS
+      - http:
+          path: graphql
+          method: POST
+          private: true
+      - http:
+          path: graphql
+          method: GET          
+      - http:
+          path: graphql/{proxy+}
+          method: GET
+    environment:
+      STACK_NAME: ${self:custom.stack_name}

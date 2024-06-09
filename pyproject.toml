@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "lambda-lxml-testbed"
+version = "0.a.0"
+description = ""
+authors = ["NSHM <nshm@gns.cri.nz>", "Chris Chamberlain <chrisbc@artisan.co.nz>"]
+license = "AGPL3"
+# readme = "README.md"
+packages = [{include = "testbed"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+flask = "^3.0.3"
+flask-cors = "^4.0.1"
+graphql-server = {extras = ["flask"], version = "^3.0.0b7"}
+graphene = "^3.3"
+lxml = "^5.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
